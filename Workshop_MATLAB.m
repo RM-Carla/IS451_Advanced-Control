@@ -38,6 +38,7 @@ STAR_TRACKER_NOISE_DELAY = 160;
 SMALL_POINTING_ERROR = 0.5*2*pi/360;
 CUSTOM_POINTING_ERROR = 2.7*2*pi/360;
 LARGE_POINTING_ERROR = 10*2*pi/360;
+MAXIMUM_LARGE_POINTING_ERROR = 25*2*pi/360;
 MAXIMUM_TOLERABLE_POINTING_ERROR = 3.5*2*pi/360;
 
 REACTION_WHEEL_DYNAMICS_NUMERATOR = REACTION_WHEEL_INERTIA*[1.214 0.763 0];	%linear dynamics of the wheel, numerator
@@ -347,8 +348,7 @@ referenceAngle = 0;     % Initialization of the variable.
 %%  2.2.1  Nonlinear control
 
 NON_LINEAR_CONTROL_GAIN = 6;    % N.m.s
-nonLinearControlSpeedCommand = 0.0032;
-% nonLinearControlSpeedCommand = COMMANDED_TORQUE_SATURATION/NON_LINEAR_CONTROL_GAIN;
+nonLinearControlSpeedCommand = 0.0033;  % It is possible to get an analytical formula for the price of a temporal analysis of the reaction wheel dynamics, just globally guessing it is faster.
 
 % nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
 % 
@@ -364,7 +364,23 @@ nonLinearControlSpeedCommand = 0.0032;
 % found earlier in this script (in case the script is partially executed).
 modalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
 modalFeedForwardGain = modalGainMatrixStateFeedback(1);
-nonlinearControlswitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
+nonlinearControlSwitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
+
+% For convenience we reset the modal with iintegrator controller gain
+% matrix with the values found earlier in this script (in case the script
+% is partially executed).
+modalWithIntegratorGainMatrixStateFeedback = [0.0223 -0.55 -5.7];
+% We are given the following values.
+NON_LINEAR_CONTROL_SPEED_COMMAND = 0.15*pi/180;
+NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
+% With the distrubance torque the wheel will eventually enter in saturation
+% whatever we do.
+
+%%  2.3  Reaction Wheel desaturation
+
+%%  2.3.1  Use of magnetorquer
+
+
 
 %% Function definitions
 
