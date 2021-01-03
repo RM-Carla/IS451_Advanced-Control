@@ -17,6 +17,7 @@ HINF_CTRL_OPEN_LOOP_SIMULINK_FN = 'hinf_control_open_loop_system';
 HINF_CTRL_NO_DERIVATIVE_FEEDBACK_OPEN_LOOP_SIMULINK_FN = 'hinf_control_no_derivative_feedback_open_loop_system';
 HINF_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN = 'hinf_control_with_integrator_open_loop_system';
 HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN = 'hinf_control_with_integrator_multimodel_open_loop_system';
+NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN = 'nonlinear_control_closed_loop_system';
 
 SATELLITE_INERTIA = 31.38;                          %Js
 FLEXIBLE_MODE_FREQUENCY = 2.6268;                   %ω
@@ -61,6 +62,8 @@ TARGET_SECOND_ORDER.DAMPING = 0.7;
 TARGET_SECOND_ORDER.TRANSFER_FUNCTION = tf([0 0 1],[TARGET_SECOND_ORDER.DAMPING^(2) 2*TARGET_SECOND_ORDER.DAMPING*TARGET_SECOND_ORDER.NATURAL_FREQUENCY 1]);
 
 SATELLITE_INERTIA_FIDELITY_MARGIN = 0.3;
+
+referenceAngle = 0;     % Initialization of the variable.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % 1 Open-loop modeling and analysis
@@ -339,6 +342,29 @@ SATELLITE_INERTIA_FIDELITY_MARGIN = 0.3;
 % % We supposed we could make a frequency domain analysis to tune the model
 % % to the frequency spectrum of inputs. Here it wouldn't be usefull.
 % hinfControlWithIntegratorMultimodelStateSpace = generateHinfWithIntegratorMultimodelStateSpace(0.4,0.1,0.25, CL0W_central, CL0W_maxWorstCase, CL0W_minWorstCase);
+
+%%  2.2  Large pointing error
+%%  2.2.1  Nonlinear control
+
+NON_LINEAR_CONTROL_GAIN = 6;    % N.m.s
+nonLinearControlSpeedCommand = 0.0032;
+% nonLinearControlSpeedCommand = COMMANDED_TORQUE_SATURATION/NON_LINEAR_CONTROL_GAIN;
+
+% nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
+% 
+% nonLinearControlFigure = figure('Name', 'Nonlinear Control response to different angles', 'NumberTitle','off');
+% hold on
+% for referenceAngle = [0.2 5 10]*(2*pi/360)
+%     nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
+% 	plot(nonLinearControlSimulinkOutput.measuredSatelliteAngle.Data, nonLinearControlSimulinkOutput.estimatedSatelliteAngularSpeed.Data);
+% end
+
+%%  2.2.2  Switching strategy
+% For convenience we reset the modal controller gain matrix with the values
+% found earlier in this script (in case the script is partially executed).
+modalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+modalFeedForwardGain = modalGainMatrixStateFeedback(1);
+nonlinearControlswitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
 
 %% Function definitions
 
