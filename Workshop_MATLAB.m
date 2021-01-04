@@ -397,6 +397,19 @@ NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
 % With value 0.1: the Td is appropriatly rejected.
 magnetorquerControllerGain = 0.1;
 
+%%  2.3.2  Anti-windup Control
+
+MAGNETORQUER_CONTROLLER_GAIN = 0.001;
+
+DEADZONE_MARGIN = 0.75;
+DEADZONE_REACTION_WHEEL_VELOCITY = DEADZONE_MARGIN * REACTION_WHEEL_VELOCITY_SATURATION;
+% N.A.: DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = 0.087964594300514.
+DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = REACTION_WHEEL_INERTIA * DEADZONE_REACTION_WHEEL_VELOCITY * dcgain(REACTION_WHEEL_ANGULAR_MOMENTUM.TRANSFER_FUNCTION);
+% High values (1) of deadzoneControllerGain create a oscilating regime.
+% Low values (0.01) of deadzoneControllerGain don't reject the Td.
+% Values around 0.1 reject the Td and create a not so bad oscilating
+% regime.
+deadzoneControllerGain = 0.1;
 %% Function definitions
 
 function gainMatrix = generateModalControlGainMatrix(spaceSateRepresentation, secondOrderDampingCoefficient, secondOrderNaturalFrequency)
