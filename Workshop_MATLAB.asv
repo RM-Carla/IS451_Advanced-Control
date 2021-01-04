@@ -387,15 +387,15 @@ NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
 %%  2.3.1  Use of magnetorquer
 % This part uses variables and constants from 2.2!
 
+
 % With value 1: we observe that the magnetorquer is significantly used
 % during all phases of temporal evolution, which induced high oscillations
 % of the reaction wheel to try to control the position of the satellite.
 % This is not precise and it is power consuming.
 % With value 0.01: the Td is not fully rejected -> wheel saturation.
-% With value 0.05: the Td is not fully rejected (but much better) -> it
-% will eventually cause the reaction wheel saturation.
-% With value 0.1: the Td is appropriatly rejected.
-magnetorquerControllerGain = 0.1;
+UNLOADING_TORQUE_SATURATION
+magnetorquerControllerGain = 1/DISTURBANCE_TORQUE
+% With value 0.33: 
 
 %% Function definitions
 
