@@ -18,6 +18,7 @@ HINF_CTRL_NO_DERIVATIVE_FEEDBACK_OPEN_LOOP_SIMULINK_FN = 'hinf_control_no_deriva
 HINF_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN = 'hinf_control_with_integrator_open_loop_system';
 HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN = 'hinf_control_with_integrator_multimodel_open_loop_system';
 NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN = 'nonlinear_control_closed_loop_system';
+SIMULATION_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN = 'simulation_validation_model_with_modal_controller';
 
 SATELLITE_INERTIA = 31.38;                          %Js
 FLEXIBLE_MODE_FREQUENCY = 2.6268;                   %ω
@@ -71,6 +72,9 @@ UNLOADING_TORQUE_SATURATION = 0.0043; % N
 % Initialization of variables.
 referenceAngle = 0;     
 magnetorquerControllerGain = 0;
+satelliteInertia = 0;
+flexibleModeDampingRatio = 0;
+flexibleModeFrequency = 0;
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % 1 Open-loop modeling and analysis
@@ -349,62 +353,112 @@ magnetorquerControllerGain = 0;
 % % We supposed we could make a frequency domain analysis to tune the model
 % % to the frequency spectrum of inputs. Here it wouldn't be usefull.
 % hinfControlWithIntegratorMultimodelStateSpace = generateHinfWithIntegratorMultimodelStateSpace(0.4,0.1,0.25, CL0W_central, CL0W_maxWorstCase, CL0W_minWorstCase);
-
-%%  2.2  Large pointing error
-%%  2.2.1  Nonlinear control
-
-NON_LINEAR_CONTROL_GAIN = 6;    % N.m.s
-nonLinearControlSpeedCommand = 0.0033;  % It is possible to get an analytical formula for the price of a temporal analysis of the reaction wheel dynamics, just globally guessing it is faster.
-
-% nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
 % 
-% nonLinearControlFigure = figure('Name', 'Nonlinear Control response to different angles', 'NumberTitle','off');
-% hold on
-% for referenceAngle = [0.2 5 10]*(2*pi/360)
-%     nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
-% 	plot(nonLinearControlSimulinkOutput.measuredSatelliteAngle.Data, nonLinearControlSimulinkOutput.estimatedSatelliteAngularSpeed.Data);
-% end
+% %%  2.2  Large pointing error
+% %%  2.2.1  Nonlinear control
+% 
+% NON_LINEAR_CONTROL_GAIN = 6;    % N.m.s
+% nonLinearControlSpeedCommand = 0.0033;  % It is possible to get an analytical formula for the price of a temporal analysis of the reaction wheel dynamics, just globally guessing it is faster.
+% 
+% % nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
+% % 
+% % nonLinearControlFigure = figure('Name', 'Nonlinear Control response to different angles', 'NumberTitle','off');
+% % hold on
+% % for referenceAngle = [0.2 5 10]*(2*pi/360)
+% %     nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
+% % 	plot(nonLinearControlSimulinkOutput.measuredSatelliteAngle.Data, nonLinearControlSimulinkOutput.estimatedSatelliteAngularSpeed.Data);
+% % end
+% 
+% %%  2.2.2  Switching strategy
+% % For convenience we reset the modal controller gain matrix with the values
+% % found earlier in this script (in case the script is partially executed).
+% modalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+% modalFeedForwardGain = modalGainMatrixStateFeedback(1);
+% nonlinearControlSwitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
+% 
+% % For convenience we reset the modal with iintegrator controller gain
+% % matrix with the values found earlier in this script (in case the script
+% % is partially executed).
+% modalWithIntegratorGainMatrixStateFeedback = [0.0223 -0.55 -5.7];
+% % We are given the following values.
+% NON_LINEAR_CONTROL_SPEED_COMMAND = 0.15*pi/180;
+% NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
+% % With the distrubance torque the wheel will eventually enter in saturation
+% % whatever we do.
+% 
+% %%  2.3  Reaction Wheel desaturation
+% 
+% %%  2.3.1  Use of magnetorquer
+% % This part uses variables and constants from 2.2!
+% 
+% % With value 1: we observe that the magnetorquer is significantly used
+% % during all phases of temporal evolution, which induced high oscillations
+% % of the reaction wheel to try to control the position of the satellite.
+% % This is not precise and it is power consuming.
+% % With value 0.01: the Td is not fully rejected -> wheel saturation.
+% % With value 0.05: the Td is not fully rejected (but much better) -> it
+% % will eventually cause the reaction wheel saturation.
+% % With value 0.1: the Td is appropriatly rejected.
+% magnetorquerControllerGain = 0.1;
+% 
+% %%  2.3.2  Anti-windup Control
+% 
+% MAGNETORQUER_CONTROLLER_GAIN = 0.001;
+% 
+% DEADZONE_MARGIN = 0.75;
+% DEADZONE_REACTION_WHEEL_VELOCITY = DEADZONE_MARGIN * REACTION_WHEEL_VELOCITY_SATURATION;
+% % N.A.: DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = 0.087964594300514.
+% DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = REACTION_WHEEL_INERTIA * DEADZONE_REACTION_WHEEL_VELOCITY * dcgain(REACTION_WHEEL_ANGULAR_MOMENTUM.TRANSFER_FUNCTION);
+% % High values (1) of deadzoneControllerGain create a oscilating regime.
+% % Low values (0.01) of deadzoneControllerGain don't reject the Td.
+% % Values around 0.1 reject the Td and create a not so bad oscilating
+% % regime.
+% deadzoneControllerGain = 0.1;
 
-%%  2.2.2  Switching strategy
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%3 CONTROL LAW VALIDATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  3.1  Simulations
 % For convenience we reset the modal controller gain matrix with the values
 % found earlier in this script (in case the script is partially executed).
-modalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
-modalFeedForwardGain = modalGainMatrixStateFeedback(1);
-nonlinearControlSwitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
+simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
 
-% For convenience we reset the modal with iintegrator controller gain
-% matrix with the values found earlier in this script (in case the script
-% is partially executed).
-modalWithIntegratorGainMatrixStateFeedback = [0.0223 -0.55 -5.7];
-% We are given the following values.
-NON_LINEAR_CONTROL_SPEED_COMMAND = 0.15*pi/180;
-NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
-% With the distrubance torque the wheel will eventually enter in saturation
-% whatever we do.
+NUMBER_OF_SAMPLES
+SATELLITE_INERTIA_UNCERTAINTY = 0.2;
+FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY = 0.3;
+FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY = 0.4;
 
-%%  2.3  Reaction Wheel desaturation
+satelliteInertiaSamples = SATELLITE_INERTIA*(1-SATELLITE_INERTIA_UNCERTAINTY*(1-2*rand(1,50)));
+flexibleModeDampingRatioSamples = FLEXIBLE_MODE_DAMPING_RATIO*(1-FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY*(1-2*rand(1,50)));
+flexibleModeFrequencySamples = FLEXIBLE_MODE_FREQUENCY*(1-FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY*(1-2*rand(1,50)));
 
-%%  2.3.1  Use of magnetorquer
-% This part uses variables and constants from 2.2!
+% % Plot of Angle response to the 50 samples.
+% simulationAngleFigure = figure('Name', 'Simulation of angle response for modal control and model for 50 random samples', 'NumberTitle','off');
+% hold on
+% for i = 1:50
+%     satelliteInertia = satelliteInertiaSamples(i);
+%     flexibleModeDampingRatio = flexibleModeDampingRatioSamples(i);
+%     flexibleModeFrequency = flexibleModeFrequencySamples(i);
+%         
+%     simulationSimulinkOutput = sim(SIMULATION_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
+%     plot(simulationSimulinkOutput.measuredSatelliteAngle);
+% end
 
-% With value 1: we observe that the magnetorquer is significantly used
-% during all phases of temporal evolution, which induced high oscillations
-% of the reaction wheel to try to control the position of the satellite.
-% This is not precise and it is power consuming.
-% With value 0.01: the Td is not fully rejected -> wheel saturation.
-% With value 0.05: the Td is not fully rejected (but much better) -> it
-% will eventually cause the reaction wheel saturation.
-% With value 0.1: the Td is appropriatly rejected.
-magnetorquerControllerGain = 0.1;
+% Plot of the poles of the closed-loop state matrix for the 50 samples.
+simulationPolesFigure = figure('Name', 'Simulation of poles for modal control angle and model for 50 random samples', 'NumberTitle','off');
+hold on
+for i = 1:150
+    satelliteInertia = satelliteInertiaSamples(i);
+    flexibleModeDampingRatio = flexibleModeDampingRatioSamples(i);
+    flexibleModeFrequency = flexibleModeFrequencySamples(i);
+        
+    modalControlAndModelStateSpace = generateStateSpaceFromSimulink(SIMULATION_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
+    plot(eig(modalControlAndModelStateSpace.system), '*');
+end
+xline(0,'-');
 
-%%  2.3.2  Anti-windup Control
-
-MAGNETORQUER_CONTROLLER_GAIN = 0.001;
-
-DEADZONE_MARGIN = 0.75;
-DEADZONE_REACTION_WHEEL_VELOCITY = DEADZONE_MARGIN * REACTION_WHEEL_VELOCITY_SATURATION;
-DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = REACTION_WHEEL_INERTIA * DEADZONE_REACTION_WHEEL_VELOCITY * dcgain(REACTION_WHEEL_ANGULAR_MOMENTUM.TRANSFER_FUNCTION);
-
+%%  3.2  μ-analysis
 
 %% Function definitions
 
