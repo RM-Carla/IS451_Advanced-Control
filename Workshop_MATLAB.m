@@ -19,6 +19,7 @@ HINF_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN = 'hinf_control_with_integrator_
 HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN = 'hinf_control_with_integrator_multimodel_open_loop_system';
 NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN = 'nonlinear_control_closed_loop_system';
 SIMULATION_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN = 'simulation_validation_model_with_modal_controller';
+MU_ANALYSIS_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN = 'mu_analysis_validation_model_with_modal_controller';
 
 SATELLITE_INERTIA = 31.38;                          %Js
 FLEXIBLE_MODE_FREQUENCY = 2.6268;                   %ω
@@ -45,6 +46,8 @@ MAXIMUM_TOLERABLE_POINTING_ERROR = 3.5*2*pi/360;
 REACTION_WHEEL_DYNAMICS_NUMERATOR = REACTION_WHEEL_INERTIA*[1.214 0.763 0];	%linear dynamics of the wheel, numerator
 REACTION_WHEEL_DYNAMICS_DENOMINATOR = [1 2.400 0.763];                     	%linear dynamics of the wheel, denominator
 
+REACTION_WHEEL_REDUCED_FORM.TRANSFER_FUNCTION = tf([1.214 0.763],[1 2.400 0.763]);
+
 REACTION_WHEEL_ANGULAR_MOMENTUM.TRANSFER_FUNCTION = tf([1.214 0.763], [1 2.400 0.763]);	% Transfer function yeilding the angular momentum from the angular speed of the reaction wheel.
 
 REACTION_WHEEL_FIRST_ORDER_TIME_CONSTANT = 1/0.38;
@@ -68,6 +71,11 @@ TARGET_SECOND_ORDER.TRANSFER_FUNCTION = tf([0 0 1],[TARGET_SECOND_ORDER.DAMPING^
 SATELLITE_INERTIA_FIDELITY_MARGIN = 0.3;
 
 UNLOADING_TORQUE_SATURATION = 0.0043; % N
+
+NUMBER_OF_SAMPLES = 50;
+SATELLITE_INERTIA_UNCERTAINTY = 0.2;
+FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY = 0.3;
+FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY = 0.4;
 
 % Initialization of variables.
 referenceAngle = 0;     
@@ -424,11 +432,6 @@ flexibleModeFrequency = 0;
 % simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
 % simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
 % 
-% NUMBER_OF_SAMPLES = 50;
-% SATELLITE_INERTIA_UNCERTAINTY = 0.2;
-% FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY = 0.3;
-% FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY = 0.4;
-% 
 % satelliteInertiaSamples = SATELLITE_INERTIA*(1-SATELLITE_INERTIA_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
 % flexibleModeDampingRatioSamples = FLEXIBLE_MODE_DAMPING_RATIO*(1-FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
 % flexibleModeFrequencySamples = FLEXIBLE_MODE_FREQUENCY*(1-FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
@@ -459,6 +462,36 @@ flexibleModeFrequency = 0;
 % xline(0,'-');
 
 %%  3.2  μ-analysis
+% You need to install the SMART library first!
+
+% For convenience we reset the modal controller gain matrix with the values
+% found earlier in this script (in case the script is partially executed).
+simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
+
+satelliteInertiaNominalValue = SATELLITE_INERTIA;
+flexibleModeDampingRatioNominalValue = FLEXIBLE_MODE_DAMPING_RATIO;
+flexibleModeFrequencyNominalValue = FLEXIBLE_MODE_FREQUENCY;
+
+% satelliteInertiaMuAnalysisUncertainty = 0;
+% flexibleModeDampingRatioMuAnalysisUncertainty = 0;
+% flexibleModeFrequencyMuAnalysisUncertainty = 0;
+% 
+% satelliteInertiaRobustnessMargin = 0;
+% flexibleModeDampingRatioRobustnessMargin = 0;
+% flexibleModeFrequencyRobustnessMargin = 0;
+
+muAnalysisModelStateSpace = generateStateSpaceFromSimulink(MU_ANALYSIS_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
+muAnalysisModelSimplifiedStateSpaceSystem=simplify(muAnalysisModelStateSpace.system,'full');
+blk=[-1 0; -1 0; -2 0];
+opt.lmi = 1;
+opt.tol = 0;   % increase  opt.tol in case of  convergence  problems
+
+upperBound = muub(muAnalysisModelSimplifiedStateSpaceSystem ,blk ,opt);
+[lowerBound ,wc ,pert]=mulb(muAnalysisModelSimplifiedStateSpaceSystem ,blk);
+disp('Upper and Lower bounds:');
+disp(1/upperBound);
+disp(1/lowerBound);
 
 %% Function definitions
 
