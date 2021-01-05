@@ -152,49 +152,49 @@ flexibleModeFrequency = 0;
 % %All in Simulink
 % 
 % 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %2 CLOSED-LOOP CONTROL
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%  2.1  Small pointing error
-% %%  2.1.1  Modal control
-% 
-% modalControlOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_OPEN_LOOP_SIMULINK_FN);
-% 
-% % damp(modalControlOpenLoop.system);
-% 
-% targetDampingCoefficient = 0.7;
-% %%%%%%%%%
-% % Attempt to determine the bandwith limit of the actuator by looking at
-% % actuator's Bode. Not sure if legit.
-% % figure,bode(tf(REACTION_WHEEL_DYNAMICS_NUMERATOR,REACTION_WHEEL_DYNAMICS_DENOMINATOR)),grid on;
-% % Value kept for bandwith limit is 0.2 rad/s
-% %%%%%%%%%
-% targetNaturalFrequency = 0.2;
-% 
-% gainMatrixStateFeedback = generateModalControlGainMatrix(modalControlOpenLoop, targetDampingCoefficient, targetNaturalFrequency);
-% damp(modalControlOpenLoop.A-modalControlOpenLoop.B*gainMatrixStateFeedback*modalControlOpenLoop.C);
-% 
-% % Margins calculated on the open loop Single Input Single Output system
-% modalControlSisoOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_SISO_OPEN_LOOP_SIMULINK_FN);
-% 
-% % figure,bode(modalControlSisoOpenLoop.system),grid on;
-% % We read the value for gainMargin = 30.8dB at frequency 2.63rad/s
-% % We read the value for phaseMargin = -79.3deg at frequency 2.23rad/s
-% % The system is unstable because of negative phaseMargin (one would say no margin).
-% 
-% feedForwardGain = gainMatrixStateFeedback(1);
-% % Controller implementation in simulink: MODAL_CTRL_CLOSED_LOOP_SIMULINK_FN
-% % The maximum admissible pointing error is 3.5deg (roughly).
-% % The system is suuuuuper slow to provide the correction.
-% 
-% maximumTolerableReferenceAngle = CUSTOM_POINTING_ERROR;   % As read on the scope from the closed loop simulink simulation
-% 
-% modalControlWithIntegratorOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN);
-% gainMatrixStateFeedBackWithIntegrator = generateModalControlGainMatrix(modalControlWithIntegratorOpenLoop, targetDampingCoefficient, targetNaturalFrequency);
-% 
-% modalControlWithIntegratorFeedForwardGain = 1;	%Obviously.
-% damp(modalControlWithIntegratorOpenLoop.A-modalControlWithIntegratorOpenLoop.B*gainMatrixStateFeedBackWithIntegrator*modalControlWithIntegratorOpenLoop.C);
-% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2 CLOSED-LOOP CONTROL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  2.1  Small pointing error
+%%  2.1.1  Modal control
+
+modalControlOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_OPEN_LOOP_SIMULINK_FN);
+
+% damp(modalControlOpenLoop.system);
+
+targetDampingCoefficient = 0.7;
+%%%%%%%%%
+% Attempt to determine the bandwith limit of the actuator by looking at
+% actuator's Bode. Not sure if legit.
+% figure,bode(tf(REACTION_WHEEL_DYNAMICS_NUMERATOR,REACTION_WHEEL_DYNAMICS_DENOMINATOR)),grid on;
+% Value kept for bandwith limit is 0.2 rad/s
+%%%%%%%%%
+targetNaturalFrequency = 0.2;
+
+gainMatrixStateFeedback = generateModalControlGainMatrix(modalControlOpenLoop, targetDampingCoefficient, targetNaturalFrequency);
+damp(modalControlOpenLoop.A-modalControlOpenLoop.B*gainMatrixStateFeedback*modalControlOpenLoop.C);
+
+% Margins calculated on the open loop Single Input Single Output system
+modalControlSisoOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_SISO_OPEN_LOOP_SIMULINK_FN);
+
+% figure,bode(modalControlSisoOpenLoop.system),grid on;
+% We read the value for gainMargin = 30.8dB at frequency 2.63rad/s
+% We read the value for phaseMargin = -79.3deg at frequency 2.23rad/s
+% The system is unstable because of negative phaseMargin (one would say no margin).
+
+feedForwardGain = gainMatrixStateFeedback(1);
+% Controller implementation in simulink: MODAL_CTRL_CLOSED_LOOP_SIMULINK_FN
+% The maximum admissible pointing error is 3.5deg (roughly).
+% The system is suuuuuper slow to provide the correction.
+
+maximumTolerableReferenceAngle = CUSTOM_POINTING_ERROR;   % As read on the scope from the closed loop simulink simulation
+
+modalControlWithIntegratorOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN);
+gainMatrixStateFeedBackWithIntegrator = generateModalControlGainMatrix(modalControlWithIntegratorOpenLoop, targetDampingCoefficient, targetNaturalFrequency);
+
+modalControlWithIntegratorFeedForwardGain = 1;	%Obviously.
+damp(modalControlWithIntegratorOpenLoop.A-modalControlWithIntegratorOpenLoop.B*gainMatrixStateFeedBackWithIntegrator*modalControlWithIntegratorOpenLoop.C);
+
 % %% 2.1.2 Phase-lead control
 % 
 % phaseLeadControlSisoOpenLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_SISO_OPEN_LOOP_SIMULINK_FN);
@@ -461,37 +461,37 @@ flexibleModeFrequency = 0;
 % end
 % xline(0,'-');
 
-%%  3.2  μ-analysis
-% You need to install the SMART library first!
-
-% For convenience we reset the modal controller gain matrix with the values
-% found earlier in this script (in case the script is partially executed).
-simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
-simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
-
-satelliteInertiaNominalValue = SATELLITE_INERTIA;
-flexibleModeDampingRatioNominalValue = FLEXIBLE_MODE_DAMPING_RATIO;
-flexibleModeFrequencyNominalValue = FLEXIBLE_MODE_FREQUENCY;
-
-% satelliteInertiaMuAnalysisUncertainty = 0;
-% flexibleModeDampingRatioMuAnalysisUncertainty = 0;
-% flexibleModeFrequencyMuAnalysisUncertainty = 0;
+% %%  3.2  μ-analysis
+% % You need to install the SMART library first!
 % 
-% satelliteInertiaRobustnessMargin = 0;
-% flexibleModeDampingRatioRobustnessMargin = 0;
-% flexibleModeFrequencyRobustnessMargin = 0;
-
-muAnalysisModelStateSpace = generateStateSpaceFromSimulink(MU_ANALYSIS_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
-muAnalysisModelSimplifiedStateSpaceSystem=simplify(muAnalysisModelStateSpace.system,'full');
-blk=[-1 0; -1 0; -2 0];
-opt.lmi = 1;
-opt.tol = 0;   % increase  opt.tol in case of  convergence  problems
-
-upperBound = muub(muAnalysisModelSimplifiedStateSpaceSystem ,blk ,opt);
-[lowerBound ,wc ,pert]=mulb(muAnalysisModelSimplifiedStateSpaceSystem ,blk);
-disp('Upper and Lower bounds:');
-disp(1/upperBound);
-disp(1/lowerBound);
+% % For convenience we reset the modal controller gain matrix with the values
+% % found earlier in this script (in case the script is partially executed).
+% simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+% simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
+% 
+% satelliteInertiaNominalValue = SATELLITE_INERTIA;
+% flexibleModeDampingRatioNominalValue = FLEXIBLE_MODE_DAMPING_RATIO;
+% flexibleModeFrequencyNominalValue = FLEXIBLE_MODE_FREQUENCY;
+% 
+% % satelliteInertiaMuAnalysisUncertainty = 0;
+% % flexibleModeDampingRatioMuAnalysisUncertainty = 0;
+% % flexibleModeFrequencyMuAnalysisUncertainty = 0;
+% % 
+% % satelliteInertiaRobustnessMargin = 0;
+% % flexibleModeDampingRatioRobustnessMargin = 0;
+% % flexibleModeFrequencyRobustnessMargin = 0;
+% 
+% muAnalysisModelStateSpace = generateStateSpaceFromSimulink(MU_ANALYSIS_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
+% muAnalysisModelSimplifiedStateSpaceSystem=simplify(muAnalysisModelStateSpace.system,'full');
+% blk=[-1 0; -1 0; -2 0];
+% opt.lmi = 1;
+% opt.tol = 0;   % increase  opt.tol in case of  convergence  problems
+% 
+% upperBound = muub(muAnalysisModelSimplifiedStateSpaceSystem ,blk ,opt);
+% [lowerBound ,wc ,pert]=mulb(muAnalysisModelSimplifiedStateSpaceSystem ,blk);
+% disp('Upper and Lower bounds:');
+% disp(1/upperBound);
+% disp(1/lowerBound);
 
 %% Function definitions
 
