@@ -41,7 +41,8 @@ SMALL_POINTING_ERROR = 0.5*2*pi/360;
 CUSTOM_POINTING_ERROR = 2.7*2*pi/360;
 LARGE_POINTING_ERROR = 10*2*pi/360;
 MAXIMUM_LARGE_POINTING_ERROR = 25*2*pi/360;
-MAXIMUM_TOLERABLE_POINTING_ERROR = 3.5*2*pi/360;
+MAXIMUM_TOLERABLE_POINTING_ERROR = 2.7*2*pi/360;
+MODAL_CONTROL_WITH_INTEGRATOR_MAXIMUM_TOLERABLE_POINTING_ERROR = 5 *(2*pi/360);
 
 REACTION_WHEEL_DYNAMICS_NUMERATOR = REACTION_WHEEL_INERTIA*[1.214 0.763 0];	%linear dynamics of the wheel, numerator
 REACTION_WHEEL_DYNAMICS_DENOMINATOR = [1 2.400 0.763];                     	%linear dynamics of the wheel, denominator
@@ -84,74 +85,74 @@ satelliteInertia = 0;
 flexibleModeDampingRatio = 0;
 flexibleModeFrequency = 0;
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % 1 Open-loop modeling and analysis
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%  1.1  Satellite model
-% 
-% c1 = -FLEXIBLE_MODE_FREQUENCY^(2)/(1 - COUPLING_COEFFICIENT);
-% c2 = -2*FLEXIBLE_MODE_DAMPING_RATIO*FLEXIBLE_MODE_FREQUENCY/(1 - COUPLING_COEFFICIENT);
-% c3 = 1/((1 - COUPLING_COEFFICIENT)*SATELLITE_INERTIA);
-% c4 = COUPLING_COEFFICIENT/((1 - COUPLING_COEFFICIENT)*SATELLITE_INERTIA);
-% 
-% flexibleSatellite = StateSpaceRepresentation(...
-%     [   0 1 0   0;...
-%         0 0 c1  c2;...
-%         0 0 0   1;...
-%         0 0 c1  c2],...
-%     [0; c3; 0; c4],...
-%     [1 0 0 0],...
-%     0);
-% setSystemNames(flexibleSatellite,...
-%     {'theta' 'theta_dot' 'eta' 'eta_dot'},...
-%     {'T'},...
-%     {'theta'});
-% 
-% damp(flexibleSatellite.system);
-% 
-% simulinkFlexibleSatellite = generateStateSpaceFromSimulink(FLEXIBLE_SATELLITE_SIMULINK_FN);
-% 
-% setSystemNames(simulinkFlexibleSatellite,...
-%     {'theta' 'theta_dot' 'eta' 'eta_dot'},...
-%     {'T'},...
-%     {'theta'});
-% 
-% damp(simulinkFlexibleSatellite.system);
-% 
-% % figure,step(flexibleSatellite.system,10),grid on
-% % figure,initial(flexibleSatellite.system,[0;0;1;0]),grid on
-% 
-% rigidSatellite = StateSpaceRepresentation(...
-%     [0 1;0 0],...
-%     [0;1/SATELLITE_INERTIA],...
-%     [1 0],...
-%     0);
-% setSystemNames(rigidSatellite,...
-%     {'theta' 'theta_dot'},...
-%     {'T'},...
-%     {'theta'});
-% 
-% % figure,bode(flexibleSatellite.system, rigidSatellite.system),grid on
-% % figure,nichols(flexibleSatellite.system, rigidSatellite.system),grid on
-% 
-% rank(ctrb(flexibleSatellite.system))
-% 
-% rank(obsv(flexibleSatellite.system))
-% 
-% %%  1.2  Actuator model
-% 
-% %All in Simulink
-% 
-% 
-% %%  1.3  Sensor and estimator model
-% 
-% % figure,bode(PURE_DERIVATOR_TRANSFER_FUNCTION , ESTIMATOR_TRANSFER_FUNCTION),grid on
-% 
-% %%  1.4  Complete open-loop model
-% 
-% %All in Simulink
-% 
-% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1 Open-loop modeling and analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  1.1  Satellite model
+
+c1 = -FLEXIBLE_MODE_FREQUENCY^(2)/(1 - COUPLING_COEFFICIENT);
+c2 = -2*FLEXIBLE_MODE_DAMPING_RATIO*FLEXIBLE_MODE_FREQUENCY/(1 - COUPLING_COEFFICIENT);
+c3 = 1/((1 - COUPLING_COEFFICIENT)*SATELLITE_INERTIA);
+c4 = COUPLING_COEFFICIENT/((1 - COUPLING_COEFFICIENT)*SATELLITE_INERTIA);
+
+flexibleSatellite = StateSpaceRepresentation(...
+    [   0 1 0   0;...
+        0 0 c1  c2;...
+        0 0 0   1;...
+        0 0 c1  c2],...
+    [0; c3; 0; c4],...
+    [1 0 0 0],...
+    0);
+setSystemNames(flexibleSatellite,...
+    {'theta' 'theta_dot' 'eta' 'eta_dot'},...
+    {'T'},...
+    {'theta'});
+
+damp(flexibleSatellite.system);
+
+simulinkFlexibleSatellite = generateStateSpaceFromSimulink(FLEXIBLE_SATELLITE_SIMULINK_FN);
+
+setSystemNames(simulinkFlexibleSatellite,...
+    {'theta' 'theta_dot' 'eta' 'eta_dot'},...
+    {'T'},...
+    {'theta'});
+
+damp(simulinkFlexibleSatellite.system);
+
+% figure,step(flexibleSatellite.system,10),grid on
+% figure,initial(flexibleSatellite.system,[0;0;1;0]),grid on
+
+rigidSatellite = StateSpaceRepresentation(...
+    [0 1;0 0],...
+    [0;1/SATELLITE_INERTIA],...
+    [1 0],...
+    0);
+setSystemNames(rigidSatellite,...
+    {'theta' 'theta_dot'},...
+    {'T'},...
+    {'theta'});
+
+% figure,bode(flexibleSatellite.system, rigidSatellite.system),grid on
+% figure,nichols(flexibleSatellite.system, rigidSatellite.system),grid on
+
+rank(ctrb(flexibleSatellite.system))
+
+rank(obsv(flexibleSatellite.system))
+
+%%  1.2  Actuator model
+
+%All in Simulink
+
+
+%%  1.3  Sensor and estimator model
+
+% figure,bode(PURE_DERIVATOR_TRANSFER_FUNCTION , ESTIMATOR_TRANSFER_FUNCTION),grid on
+
+%%  1.4  Complete open-loop model
+
+%All in Simulink
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %2 CLOSED-LOOP CONTROL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,8 +179,8 @@ damp(modalControlOpenLoop.A-modalControlOpenLoop.B*gainMatrixStateFeedback*modal
 modalControlSisoOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_SISO_OPEN_LOOP_SIMULINK_FN);
 
 % figure,bode(modalControlSisoOpenLoop.system),grid on;
-% We read the value for gainMargin = 30.8dB at frequency 2.63rad/s
-% We read the value for phaseMargin = -79.3deg at frequency 2.23rad/s
+% We read the value for gainMargin = 89.2dB at frequency 2.62rad/s
+% We read the value for phaseMargin = -14.1deg at frequency 1.73rad/s
 % The system is unstable because of negative phaseMargin (one would say no margin).
 
 feedForwardGain = gainMatrixStateFeedback(1);
@@ -192,263 +193,268 @@ maximumTolerableReferenceAngle = CUSTOM_POINTING_ERROR;   % As read on the scope
 modalControlWithIntegratorOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN);
 gainMatrixStateFeedBackWithIntegrator = generateModalControlGainMatrix(modalControlWithIntegratorOpenLoop, targetDampingCoefficient, targetNaturalFrequency);
 
+% We didn't find the correct simulink representation to compute the gain,
+% so here you go with the answer [0.0223 -0.55 -5.7].
+gainMatrixStateFeedBackWithIntegrator = [0.0223 -0.55 -5.7];
+
 modalControlWithIntegratorFeedForwardGain = 1;	%Obviously.
 damp(modalControlWithIntegratorOpenLoop.A-modalControlWithIntegratorOpenLoop.B*gainMatrixStateFeedBackWithIntegrator*modalControlWithIntegratorOpenLoop.C);
 
-% %% 2.1.2 Phase-lead control
-% 
-% phaseLeadControlSisoOpenLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_SISO_OPEN_LOOP_SIMULINK_FN);
-% 
-% % sisotool(phaseLeadControlSisoOpenLoopStateSpace.system);
-% % There is no gain allowing reasonable positive phase and gain margin (seen in the Bode)
-% % even though a gain of 28719 units achieves theoretical positive margins.
-% % The root locus shows always some positive or negative quasi-zero roots,
-% % therefore the system is unstable.
-% 
-% % We can read on the Bode diagram that GdB = 0 at frequency 0.173 rad/s.
-% CROSSOVER_FREQUENCY = 0.173;
-% 
-% % The required phase lead is the distance between the current phase at
-% % crossover and the desired phase margin (14.1 + 50).
-% REQUIRED_PHASE_LEAD = (14.1 + 50)*(pi/180);
-% 
-% % We use the fact that in the Lead Controller phase is maximum at the
-% % frequency 1/(tau*sqrt(a)) to get the second equation we need.
-% solutions = generateRatioAndNaturalFrequencyPhaseLeadController(REQUIRED_PHASE_LEAD, CROSSOVER_FREQUENCY);
-% 
-% phaseLeadNaturalFrequencyRatio = double(solutions.symbolicPhaseLeadNaturalFrequencyRatio);
-% phaseLeadDenominatorNaturalFrequency = double(solutions.symbolicPhaseLeadDenominatorNaturalFrequency);
-% % barePhaseLeadGainAtCrossover = abs((1+phaseLeadNaturalFrequencyRatio*phaseLeadDenominatorNaturalFrequency*CROSSOVER_FREQUENCY*1i)/(1+phaseLeadDenominatorNaturalFrequency*CROSSOVER_FREQUENCY*1i));
-% phaseLeadGain = UNITARY_GAIN;
-% 
-% phaseLeadControllerTransferFunctionNumerator = phaseLeadGain * [phaseLeadNaturalFrequencyRatio*phaseLeadDenominatorNaturalFrequency 1];
-% phaseLeadControllerTransferFunctionDenominator = [phaseLeadDenominatorNaturalFrequency 1];
-% 
-% % Obviously equal to 1 here.
-% phaseLeadFeedForwardGain = dcgain(tf(phaseLeadControllerTransferFunctionNumerator,phaseLeadControllerTransferFunctionDenominator));
-% 
-% phaseLeadControlSisoClosedLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_SISO_CONTROLLER_OPEN_LOOP_SIMULINK_FN);
-% 
-% %sisotool(phaseLeadControlSisoClosedLoopStateSpace.system);
-% % We can read in the bode diagram with the controller in open loop that we
-% % need a 0.23 gain to get back the crossover frequency on 0.173 rad/s.
-% PHASE_LEAD_GAIN = 0.23;
-% 
-% phaseLeadControllerTransferFunctionNumerator = PHASE_LEAD_GAIN * [phaseLeadNaturalFrequencyRatio*phaseLeadDenominatorNaturalFrequency 1];
-% phaseLeadControllerTransferFunction = tf(phaseLeadControllerTransferFunctionNumerator, phaseLeadControllerTransferFunctionDenominator);
-% % Obviously equal to PHASE_LEAD_CONTROLLER_GAIN here.
-% phaseLeadFeedForwardGain = dcgain(tf(phaseLeadControllerTransferFunctionNumerator,phaseLeadControllerTransferFunctionDenominator));
-% phaseLeadFeedForwardGainTransferFunction = tf([phaseLeadFeedForwardGain]);
-% 
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%% ANALYSIS OF THE CLOSED LOOP SYSTEM %%%%%%%%%%%%%%%
-% % To do so we open again the SISO open loop system and we add manually in
-% % the Control System Designer the controller and the feedforward gain.
-% % sisotool(phaseLeadControlSisoOpenLoopStateSpace.system);
-% % We observe that the actual maximum of the induced phase lead is actually
-% % a little behind the designed frequency at max. This is because of the
-% % addition of the satellite model with the controller. Therefore, we can
-% % make an adjustment to this.
-% optimizedPhaseTarget = REQUIRED_PHASE_LEAD + (3.2 *(pi/180));	% Value read on the previous sisotool.
-% optimizedFrequencyAtMaximumPhase = CROSSOVER_FREQUENCY + 0.13;  % Value read on the previous sisotool.
-% phaseLeadControllerOptimizedGain = 0.335;                       % Value read on the sisotool based on the two valeus above.
-% % For 45° margin use phase -1.3°, freq +0.13, gain 0.395.
-% 
-% % %%%%%% Interesting study on the best configuration %%%%%
-% % % This controller has the best time response to a step command for margin
-% % % 50°. However is it pratically achievable ?
-% % % Natural freq is 9.169248080054350e-06, which doesn't appear reasonable.
-% % optimizedPhaseTarget = 89.9 * (pi/180);
-% % optimizedFrequencyAtMaximumPhase = CROSSOVER_FREQUENCY +  96;
-% % phaseLeadControllerOptimizedGain = 0.433;
-% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% % We compute again the parameters of the phase lead controller. 
-% solutions = generateRatioAndNaturalFrequencyPhaseLeadController(optimizedPhaseTarget, optimizedFrequencyAtMaximumPhase);
-% 
-% phaseLeadOptimizedNaturalFrequencyRatio = double(solutions.symbolicPhaseLeadNaturalFrequencyRatio);    
-% phaseLeadOptimizedDenominatorNaturalFrequency = double(solutions.symbolicPhaseLeadDenominatorNaturalFrequency);
-% 
-% phaseLeadOptimizedControllerTransferFunctionNumerator = phaseLeadControllerOptimizedGain * [phaseLeadOptimizedNaturalFrequencyRatio*phaseLeadOptimizedDenominatorNaturalFrequency 1];
-% phaseLeadOptimizedControllerTransferFunctionDenominator = [phaseLeadOptimizedDenominatorNaturalFrequency 1];
-% phaseLeadOptimizedControllerTransferFunction = tf(phaseLeadOptimizedControllerTransferFunctionNumerator,phaseLeadOptimizedControllerTransferFunctionDenominator);
-% 
-% % Obviously equal to 1 here.
-% phaseLeadOptimizedFeedForwardGain = dcgain(phaseLeadOptimizedControllerTransferFunction);
-% phaseLeadOptimizedFeedForwardGainTransferFunction = tf([phaseLeadOptimizedFeedForwardGain]);
-% 
-% % We observe here for trials and validation.
-% % sisotool(phaseLeadControlSisoOpenLoopStateSpace.system);
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% 
-% % sisotool(phaseLeadControllerTransferFunction);
-% % 1. We can see that this phase lead controller is behaving as a high pass
-% % filter at frequency 1/a*tau if plugged in direct link. 
-% % 2. With unitary feedback the satellite acquires a non-convergent state
-% % for a step command. The stationnary state is a sinusoïde of period 0.024s.
-% % 3. Therefore, plugging the phase lead controller in direct link will
-% % filter out the sinusoïde of the stationnary state making it effectively
-% % converge onto the step command.
-% 
-% %  A pure "I" controller could bring the error to zero, but it would be
-% %  both slow reacting at the start and brutal in the end.
-% 
-% % We can afford at most -5° at crossover frequency.
-% TARGET_PI_PHASE_AT_CROSSOVER = - 5*(pi/180);
-% syms symbolicPiTimeConstant;
-% equationOnPiTimeConstant = -1/(symbolicPiTimeConstant*CROSSOVER_FREQUENCY) == tan(TARGET_PI_PHASE_AT_CROSSOVER);
-% phaseLeadPiTimeConstant = double(solve(equationOnPiTimeConstant, symbolicPiTimeConstant));
-% phaseLeadPiTransferFunctionNumerator = [phaseLeadPiTimeConstant 1];
-% phaseLeadPiTransferFunctionDenominator = [phaseLeadPiTimeConstant 0];
-% 
-% phaseLeadControlWithPiSisoControllerOpenLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_WITH_PI_SISO_CONTROLLER_OPEN_LOOP_SIMULINK_FN);
-% % sisotool(phaseLeadControlWithPiSisoControllerOpenLoopStateSpace.system);
-% % We read a gain of 4.32 units.
-% phaseLeadPiInducedAdditionalGain = 4.32;
-% phaseLeadWithPiControllerTransferFunctionNumerator = phaseLeadPiInducedAdditionalGain*phaseLeadOptimizedControllerTransferFunctionNumerator;
-% phaseLeadWithPiControllerTransferFunctionDenominator = phaseLeadOptimizedControllerTransferFunctionDenominator;
-% phaseLeadWithPiControllerTransferFunction = tf(phaseLeadWithPiControllerTransferFunctionNumerator, phaseLeadWithPiControllerTransferFunctionDenominator);
-% 
-% phaseLeadWithPiFeedForwardGain = dcgain(phaseLeadWithPiControllerTransferFunction);
-% phaseLeadWithPiFeedForwardGainTransferFunction = tf([phaseLeadWithPiFeedForwardGain]);
+MODAL_CONTROL_WITH_INTEGRATOR_MAXIMUM_TOLERABLE_POINTING_ERROR = 5 *(2*pi/360);
 
-% %% 2.1.3 Structured Hinf Control
-% 
-% % differenceToSecondOrderWeightingStateSpace = makeweight(100,[0.032,0.9],0.1);    % Values obtained by trials and errors: 100,[0.032,0.9],0.1
-% % torqueWeightingStateSpace = makeweight(0.1,[100,0.9],1);                         % Values obtained by trials and errors: 0.1,[100,0.9],1
-% % 
-% % hinfControlStateSpace = generateHinfStateSpace(HINF_CTRL_OPEN_LOOP_SIMULINK_FN);
-% 
-% % hinfControlNoDerivativeFeedbackStateSpace = generateHinfNoDerivativeFeedbackStateSpace(HINF_CTRL_NO_DERIVATIVE_FEEDBACK_OPEN_LOOP_SIMULINK_FN);
-% % % Interestingly enough our previous weighting function work quite well here
-% % % too. There is no need to find others (even though it's slightly less
-% % % performant.
-% 
-% % differenceToSecondOrderWithIntegratorWeightStateSpace = makeweight(10,[0.1,0.1],0.01);        % Values obtained by trials and errors: 10,[0.1,0.1],0.01
-% % torqueWithIntegratorWeightStateSpace = makeweight(0.1,[100,0.9],1);                           % Values obtained by trials and errors: 0.1,[100,0.9],1
-% % positionWithIntegratorWeightStateSpace = makeweight(1,[0.1,0.9],0.01);                        % Values obtained by trials and errors: 1,[0.1,0.9],0.01
-% % 
-% % secondOrderGainCorrection = dcgain(TARGET_SECOND_ORDER.TRANSFER_FUNCTION);
-% % 
-% % hinfControlWithIntegratorStateSpace = generateHinfWithIntegratorStateSpace(HINF_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN);
-% 
-% satelliteInertiaMaxWorstCase = SATELLITE_INERTIA*(1+SATELLITE_INERTIA_FIDELITY_MARGIN);
-% satelliteInertiaMinWorstCase = SATELLITE_INERTIA*(1-SATELLITE_INERTIA_FIDELITY_MARGIN);
-% 
-% % Generation of CL0W for central value of the satellite inertia
-% satelliteInertia = SATELLITE_INERTIA;
-% % To determine the new weight functions one can use "generateHinfWithIntegratorStateSpace(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN)"
-% % to observe the impact of the new inertia "satelliteInertia and the impact
-% % of the new "*MultimodalWeightStateSpace" functions.
-% differenceToSecondOrderWithIntegratorMultimodalWeightStateSpace = makeweight(10,[0.1,0.1],0.01);    % Same values as before of course: 10,[0.1,0.1],0.01.
-% torqueWithIntegratorMultimodalWeightStateSpace = makeweight(0.1,[100,0.9],1);                       % Same values as before: 0.1,[100,0.9],1.
-% positionWithIntegratorMultimodalWeightStateSpace = makeweight(1,[0.1,0.9],0.01);                    % Same values as before: 1,[0.1,0.9],0.01.
-% CL0W_central = generateHinfWithIntegratorCl0wMatrix(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN);
-% % Generation of CL0W for max worst case value of the satellite inertia
-% satelliteInertia = satelliteInertiaMaxWorstCase;
-% differenceToSecondOrderWithIntegratorMultimodalWeightStateSpace = makeweight(10,[0.1,0.057],0.01);  % Values determined by trials and validations: 10,[0.1,0.057],0.01.
-% CL0W_maxWorstCase = generateHinfWithIntegratorCl0wMatrix(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN);
-% % Generation of CL0W for min worst case value of the satellite inertia
-% satelliteInertia = satelliteInertiaMinWorstCase;
-% differenceToSecondOrderWithIntegratorMultimodalWeightStateSpace = makeweight(10,[0.1,0.225],0.01);  % Values determined by trials and validations: 10,[0.1,0.225],0.01.
-% CL0W_minWorstCase = generateHinfWithIntegratorCl0wMatrix(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN);
-% 
-% % Generation of the multimodal HinfController, optimum coefficients are:
-% % 0.4, 0.1, 0.25
-% % We supposed we could make a frequency domain analysis to tune the model
-% % to the frequency spectrum of inputs. Here it wouldn't be usefull.
-% hinfControlWithIntegratorMultimodelStateSpace = generateHinfWithIntegratorMultimodelStateSpace(0.4,0.1,0.25, CL0W_central, CL0W_maxWorstCase, CL0W_minWorstCase);
-% 
-% %%  2.2  Large pointing error
-% %%  2.2.1  Nonlinear control
-% 
-% NON_LINEAR_CONTROL_GAIN = 6;    % N.m.s
-% nonLinearControlSpeedCommand = 0.0033;  % It is possible to get an analytical formula for the price of a temporal analysis of the reaction wheel dynamics, just globally guessing it is faster.
-% 
-% % nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
-% % 
-% % nonLinearControlFigure = figure('Name', 'Nonlinear Control response to different angles', 'NumberTitle','off');
-% % hold on
-% % for referenceAngle = [0.2 5 10]*(2*pi/360)
-% %     nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
-% % 	plot(nonLinearControlSimulinkOutput.measuredSatelliteAngle.Data, nonLinearControlSimulinkOutput.estimatedSatelliteAngularSpeed.Data);
-% % end
-% 
-% %%  2.2.2  Switching strategy
-% % For convenience we reset the modal controller gain matrix with the values
-% % found earlier in this script (in case the script is partially executed).
-% modalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
-% modalFeedForwardGain = modalGainMatrixStateFeedback(1);
-% nonlinearControlSwitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
-% 
-% % For convenience we reset the modal with iintegrator controller gain
-% % matrix with the values found earlier in this script (in case the script
-% % is partially executed).
-% modalWithIntegratorGainMatrixStateFeedback = [0.0223 -0.55 -5.7];
-% % We are given the following values.
-% NON_LINEAR_CONTROL_SPEED_COMMAND = 0.15*pi/180;
-% NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
-% % With the distrubance torque the wheel will eventually enter in saturation
-% % whatever we do.
-% 
-% %%  2.3  Reaction Wheel desaturation
-% 
-% %%  2.3.1  Use of magnetorquer
-% % This part uses variables and constants from 2.2!
-% 
-% % With value 1: we observe that the magnetorquer is significantly used
-% % during all phases of temporal evolution, which induced high oscillations
-% % of the reaction wheel to try to control the position of the satellite.
-% % This is not precise and it is power consuming.
-% % With value 0.01: the Td is not fully rejected -> wheel saturation.
-% % With value 0.05: the Td is not fully rejected (but much better) -> it
-% % will eventually cause the reaction wheel saturation.
-% % With value 0.1: the Td is appropriatly rejected.
-% magnetorquerControllerGain = 0.1;
-% 
-% %%  2.3.2  Anti-windup Control
-% 
-% MAGNETORQUER_CONTROLLER_GAIN = 0.001;
-% 
-% DEADZONE_MARGIN = 0.75;
-% DEADZONE_REACTION_WHEEL_VELOCITY = DEADZONE_MARGIN * REACTION_WHEEL_VELOCITY_SATURATION;
-% % N.A.: DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = 0.087964594300514.
-% DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = REACTION_WHEEL_INERTIA * DEADZONE_REACTION_WHEEL_VELOCITY * dcgain(REACTION_WHEEL_ANGULAR_MOMENTUM.TRANSFER_FUNCTION);
-% % High values (1) of deadzoneControllerGain create a oscilating regime.
-% % Low values (0.01) of deadzoneControllerGain don't reject the Td.
-% % Values around 0.1 reject the Td and create a not so bad oscilating
-% % regime.
-% deadzoneControllerGain = 0.1;
+%% 2.1.2 Phase-lead control
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %3 CONTROL LAW VALIDATION
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%  3.1  Simulations
-% % For convenience we reset the modal controller gain matrix with the values
-% % found earlier in this script (in case the script is partially executed).
-% simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
-% simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
-% 
-% satelliteInertiaSamples = SATELLITE_INERTIA*(1-SATELLITE_INERTIA_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
-% flexibleModeDampingRatioSamples = FLEXIBLE_MODE_DAMPING_RATIO*(1-FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
-% flexibleModeFrequencySamples = FLEXIBLE_MODE_FREQUENCY*(1-FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
-% 
-% % % Plot of Angle response to the 50 samples.
-% % simulationAngleFigure = figure('Name', 'Simulation of angle response for modal control and model for 50 random samples', 'NumberTitle','off');
-% % hold on
-% % for i = 1:NUMBER_OF_SAMPLES
-% %     satelliteInertia = satelliteInertiaSamples(i);
-% %     flexibleModeDampingRatio = flexibleModeDampingRatioSamples(i);
-% %     flexibleModeFrequency = flexibleModeFrequencySamples(i);
-% %         
-% %     simulationSimulinkOutput = sim(SIMULATION_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
-% %     plot(simulationSimulinkOutput.measuredSatelliteAngle);
-% % end
-% 
-% % Plot of the poles of the closed-loop state matrix for the 50 samples.
+phaseLeadControlSisoOpenLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_SISO_OPEN_LOOP_SIMULINK_FN);
+
+% sisotool(phaseLeadControlSisoOpenLoopStateSpace.system);
+% There is no gain allowing reasonable positive phase and gain margin (seen in the Bode)
+% even though a gain of 28719 units achieves theoretical positive margins.
+% The root locus shows always some positive or negative quasi-zero roots,
+% therefore the system is unstable.
+
+% We can read on the Bode diagram that GdB = 0 at frequency 0.173 rad/s.
+CROSSOVER_FREQUENCY = 0.173;
+
+% The required phase lead is the distance between the current phase at
+% crossover and the desired phase margin (14.1 + 50).
+REQUIRED_PHASE_LEAD = (14.1 + 50)*(pi/180);
+
+% We use the fact that in the Lead Controller phase is maximum at the
+% frequency 1/(tau*sqrt(a)) to get the second equation we need.
+solutions = generateRatioAndNaturalFrequencyPhaseLeadController(REQUIRED_PHASE_LEAD, CROSSOVER_FREQUENCY);
+
+phaseLeadNaturalFrequencyRatio = double(solutions.symbolicPhaseLeadNaturalFrequencyRatio);
+phaseLeadDenominatorNaturalFrequency = double(solutions.symbolicPhaseLeadDenominatorNaturalFrequency);
+% barePhaseLeadGainAtCrossover = abs((1+phaseLeadNaturalFrequencyRatio*phaseLeadDenominatorNaturalFrequency*CROSSOVER_FREQUENCY*1i)/(1+phaseLeadDenominatorNaturalFrequency*CROSSOVER_FREQUENCY*1i));
+phaseLeadGain = UNITARY_GAIN;
+
+phaseLeadControllerTransferFunctionNumerator = phaseLeadGain * [phaseLeadNaturalFrequencyRatio*phaseLeadDenominatorNaturalFrequency 1];
+phaseLeadControllerTransferFunctionDenominator = [phaseLeadDenominatorNaturalFrequency 1];
+
+% Obviously equal to 1 here.
+phaseLeadFeedForwardGain = dcgain(tf(phaseLeadControllerTransferFunctionNumerator,phaseLeadControllerTransferFunctionDenominator));
+
+phaseLeadControlSisoClosedLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_SISO_CONTROLLER_OPEN_LOOP_SIMULINK_FN);
+
+%sisotool(phaseLeadControlSisoClosedLoopStateSpace.system);
+% We can read in the bode diagram with the controller in open loop that we
+% need a 0.23 gain to get back the crossover frequency on 0.173 rad/s.
+PHASE_LEAD_GAIN = 0.23;
+
+phaseLeadControllerTransferFunctionNumerator = PHASE_LEAD_GAIN * [phaseLeadNaturalFrequencyRatio*phaseLeadDenominatorNaturalFrequency 1];
+phaseLeadControllerTransferFunction = tf(phaseLeadControllerTransferFunctionNumerator, phaseLeadControllerTransferFunctionDenominator);
+% Obviously equal to PHASE_LEAD_CONTROLLER_GAIN here.
+phaseLeadFeedForwardGain = dcgain(tf(phaseLeadControllerTransferFunctionNumerator,phaseLeadControllerTransferFunctionDenominator));
+phaseLeadFeedForwardGainTransferFunction = tf([phaseLeadFeedForwardGain]);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%% ANALYSIS OF THE CLOSED LOOP SYSTEM %%%%%%%%%%%%%%%
+% To do so we open again the SISO open loop system and we add manually in
+% the Control System Designer the controller and the feedforward gain.
+% sisotool(phaseLeadControlSisoOpenLoopStateSpace.system);
+% We observe that the actual maximum of the induced phase lead is actually
+% a little behind the designed frequency at max. This is because of the
+% addition of the satellite model with the controller. Therefore, we can
+% make an adjustment to this.
+optimizedPhaseTarget = REQUIRED_PHASE_LEAD + (3.2 *(pi/180));	% Value read on the previous sisotool.
+optimizedFrequencyAtMaximumPhase = CROSSOVER_FREQUENCY + 0.13;  % Value read on the previous sisotool.
+phaseLeadControllerOptimizedGain = 0.335;                       % Value read on the sisotool based on the two valeus above.
+% For 45° margin use phase -1.3°, freq +0.13, gain 0.395.
+
+% %%%%%% Interesting study on the best configuration %%%%%
+% % This controller has the best time response to a step command for margin
+% % 50°. However is it pratically achievable ?
+% % Natural freq is 9.169248080054350e-06, which doesn't appear reasonable.
+% optimizedPhaseTarget = 89.9 * (pi/180);
+% optimizedFrequencyAtMaximumPhase = CROSSOVER_FREQUENCY +  96;
+% phaseLeadControllerOptimizedGain = 0.433;
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% We compute again the parameters of the phase lead controller. 
+solutions = generateRatioAndNaturalFrequencyPhaseLeadController(optimizedPhaseTarget, optimizedFrequencyAtMaximumPhase);
+
+phaseLeadOptimizedNaturalFrequencyRatio = double(solutions.symbolicPhaseLeadNaturalFrequencyRatio);    
+phaseLeadOptimizedDenominatorNaturalFrequency = double(solutions.symbolicPhaseLeadDenominatorNaturalFrequency);
+
+phaseLeadOptimizedControllerTransferFunctionNumerator = phaseLeadControllerOptimizedGain * [phaseLeadOptimizedNaturalFrequencyRatio*phaseLeadOptimizedDenominatorNaturalFrequency 1];
+phaseLeadOptimizedControllerTransferFunctionDenominator = [phaseLeadOptimizedDenominatorNaturalFrequency 1];
+phaseLeadOptimizedControllerTransferFunction = tf(phaseLeadOptimizedControllerTransferFunctionNumerator,phaseLeadOptimizedControllerTransferFunctionDenominator);
+
+% Obviously equal to phaseLeadControllerOptimizedGain here.
+phaseLeadOptimizedFeedForwardGain = dcgain(phaseLeadOptimizedControllerTransferFunction);
+phaseLeadOptimizedFeedForwardGainTransferFunction = tf([phaseLeadOptimizedFeedForwardGain]);
+
+% We observe here for trials and validation.
+% sisotool(phaseLeadControlSisoOpenLoopStateSpace.system);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% sisotool(phaseLeadControllerTransferFunction);
+% 1. We can see that this phase lead controller is behaving as a high pass
+% filter at frequency 1/a*tau if plugged in direct link. 
+% 2. With unitary feedback the satellite acquires a non-convergent state
+% for a step command. The stationnary state is a sinusoïde of period 0.024s.
+% 3. Therefore, plugging the phase lead controller in direct link will
+% filter out the sinusoïde of the stationnary state making it effectively
+% converge onto the step command.
+
+%  A pure "I" controller could bring the error to zero, but it would be
+%  both slow reacting at the start and brutal in the end.
+
+% We can afford at most -5° at crossover frequency.
+TARGET_PI_PHASE_AT_CROSSOVER = - 5*(pi/180);
+syms symbolicPiTimeConstant;
+equationOnPiTimeConstant = -1/(symbolicPiTimeConstant*CROSSOVER_FREQUENCY) == tan(TARGET_PI_PHASE_AT_CROSSOVER);
+phaseLeadPiTimeConstant = double(solve(equationOnPiTimeConstant, symbolicPiTimeConstant));
+phaseLeadPiTransferFunctionNumerator = [phaseLeadPiTimeConstant 1];
+phaseLeadPiTransferFunctionDenominator = [phaseLeadPiTimeConstant 0];
+
+phaseLeadControlWithPiSisoControllerOpenLoopStateSpace = generateStateSpaceFromSimulink(PHASE_LEAD_CTRL_WITH_PI_SISO_CONTROLLER_OPEN_LOOP_SIMULINK_FN);
+% sisotool(phaseLeadControlWithPiSisoControllerOpenLoopStateSpace.system);
+% We read a gain of 4.32 units.
+phaseLeadPiInducedAdditionalGain = 4.32;
+phaseLeadWithPiControllerTransferFunctionNumerator = phaseLeadPiInducedAdditionalGain*phaseLeadOptimizedControllerTransferFunctionNumerator;
+phaseLeadWithPiControllerTransferFunctionDenominator = phaseLeadOptimizedControllerTransferFunctionDenominator;
+phaseLeadWithPiControllerTransferFunction = tf(phaseLeadWithPiControllerTransferFunctionNumerator, phaseLeadWithPiControllerTransferFunctionDenominator);
+
+phaseLeadWithPiFeedForwardGain = dcgain(phaseLeadWithPiControllerTransferFunction);
+phaseLeadWithPiFeedForwardGainTransferFunction = tf([phaseLeadWithPiFeedForwardGain]);
+%% 2.1.3 Structured Hinf Control
+
+differenceToSecondOrderWeightingStateSpace = makeweight(100,[0.032,0.9],0.1);    % Values obtained by trials and errors: 100,[0.032,0.9],0.1
+torqueWeightingStateSpace = makeweight(0.1,[100,0.9],1);                         % Values obtained by trials and errors: 0.1,[100,0.9],1
+
+hinfControlStateSpace = generateHinfStateSpace(HINF_CTRL_OPEN_LOOP_SIMULINK_FN);
+
+hinfControlNoDerivativeFeedbackStateSpace = generateHinfNoDerivativeFeedbackStateSpace(HINF_CTRL_NO_DERIVATIVE_FEEDBACK_OPEN_LOOP_SIMULINK_FN);
+% Interestingly enough our previous weighting function work quite well here
+% too. There is no need to find others (even though it's slightly less
+% performant.
+
+differenceToSecondOrderWithIntegratorWeightStateSpace = makeweight(10,[0.1,0.1],0.01);        % Values obtained by trials and errors: 10,[0.1,0.1],0.01
+torqueWithIntegratorWeightStateSpace = makeweight(0.1,[100,0.9],1);                           % Values obtained by trials and errors: 0.1,[100,0.9],1
+positionWithIntegratorWeightStateSpace = makeweight(1,[0.1,0.9],0.01);                        % Values obtained by trials and errors: 1,[0.1,0.9],0.01
+
+secondOrderGainCorrection = dcgain(TARGET_SECOND_ORDER.TRANSFER_FUNCTION);
+
+hinfControlWithIntegratorStateSpace = generateHinfWithIntegratorStateSpace(HINF_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN);
+
+satelliteInertiaMaxWorstCase = SATELLITE_INERTIA*(1+SATELLITE_INERTIA_FIDELITY_MARGIN);
+satelliteInertiaMinWorstCase = SATELLITE_INERTIA*(1-SATELLITE_INERTIA_FIDELITY_MARGIN);
+
+% Generation of CL0W for central value of the satellite inertia
+satelliteInertia = SATELLITE_INERTIA;
+% To determine the new weight functions one can use "generateHinfWithIntegratorStateSpace(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN)"
+% to observe the impact of the new inertia "satelliteInertia and the impact
+% of the new "*MultimodalWeightStateSpace" functions.
+differenceToSecondOrderWithIntegratorMultimodalWeightStateSpace = makeweight(10,[0.1,0.1],0.01);    % Same values as before of course: 10,[0.1,0.1],0.01.
+torqueWithIntegratorMultimodalWeightStateSpace = makeweight(0.1,[100,0.9],1);                       % Same values as before: 0.1,[100,0.9],1.
+positionWithIntegratorMultimodalWeightStateSpace = makeweight(1,[0.1,0.9],0.01);                    % Same values as before: 1,[0.1,0.9],0.01.
+CL0W_central = generateHinfWithIntegratorCl0wMatrix(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN);
+% Generation of CL0W for max worst case value of the satellite inertia
+satelliteInertia = satelliteInertiaMaxWorstCase;
+differenceToSecondOrderWithIntegratorMultimodalWeightStateSpace = makeweight(10,[0.1,0.057],0.01);  % Values determined by trials and validations: 10,[0.1,0.057],0.01.
+CL0W_maxWorstCase = generateHinfWithIntegratorCl0wMatrix(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN);
+% Generation of CL0W for min worst case value of the satellite inertia
+satelliteInertia = satelliteInertiaMinWorstCase;
+differenceToSecondOrderWithIntegratorMultimodalWeightStateSpace = makeweight(10,[0.1,0.225],0.01);  % Values determined by trials and validations: 10,[0.1,0.225],0.01.
+CL0W_minWorstCase = generateHinfWithIntegratorCl0wMatrix(HINF_CTRL_WITH_INTEGRATOR_MULTIMODEL_OPEN_LOOP_SIMULINK_FN);
+
+% Generation of the multimodal HinfController, optimum coefficients are:
+% 0.4, 0.1, 0.25
+% We supposed we could make a frequency domain analysis to tune the model
+% to the frequency spectrum of inputs. Here it wouldn't be usefull.
+hinfControlWithIntegratorMultimodelStateSpace = generateHinfWithIntegratorMultimodelStateSpace(0.4,0.1,0.25, CL0W_central, CL0W_maxWorstCase, CL0W_minWorstCase);
+
+%%  2.2  Large pointing error
+%%  2.2.1  Nonlinear control
+
+NON_LINEAR_CONTROL_GAIN = 6;    % N.m.s
+nonLinearControlSpeedCommand = 0.0033;  % It is possible to get an analytical formula for the price of a temporal analysis of the reaction wheel dynamics, just globally guessing it is faster.
+
+nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
+
+nonLinearControlFigure = figure('Name', 'Nonlinear Control response to different angles', 'NumberTitle','off');
+hold on
+for referenceAngle = [0.2 5 10]*(2*pi/360)
+    nonLinearControlSimulinkOutput = sim(NONLINEAR_CTRL_CLOSED_LOOP_SIMULINK_FN);
+	plot(nonLinearControlSimulinkOutput.measuredSatelliteAngle.Data, nonLinearControlSimulinkOutput.estimatedSatelliteAngularSpeed.Data);
+end
+
+%%  2.2.2  Switching strategy
+% For convenience we reset the modal controller gain matrix with the values
+% found earlier in this script (in case the script is partially executed).
+modalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+modalFeedForwardGain = modalGainMatrixStateFeedback(1);
+nonlinearControlSwitchingThreshold = nonLinearControlSpeedCommand*modalGainMatrixStateFeedback(2)/modalGainMatrixStateFeedback(1);
+
+% For convenience we reset the modal with iintegrator controller gain
+% matrix with the values found earlier in this script (in case the script
+% is partially executed).
+modalWithIntegratorGainMatrixStateFeedback = [0.0223 -0.55 -5.7];
+% We are given the following values.
+NON_LINEAR_CONTROL_SPEED_COMMAND = 0.15*pi/180;
+NON_LINEAR_CONTROL_SWITCHING_THRESHOLD = 3*pi/180;
+% With the distrubance torque the wheel will eventually enter in saturation
+% whatever we do.
+
+%%  2.3  Reaction Wheel desaturation
+
+%%  2.3.1  Use of magnetorquer
+% This part uses variables and constants from 2.2!
+
+% With value 1: we observe that the magnetorquer is significantly used
+% during all phases of temporal evolution, which induced high oscillations
+% of the reaction wheel to try to control the position of the satellite.
+% This is not precise and it is power consuming.
+% With value 0.01: the Td is not fully rejected -> wheel saturation.
+% With value 0.05: the Td is not fully rejected (but much better) -> it
+% will eventually cause the reaction wheel saturation.
+% With value 0.1: the Td is appropriatly rejected.
+magnetorquerControllerGain = 0.1;
+
+%%  2.3.2  Anti-windup Control
+
+MAGNETORQUER_CONTROLLER_GAIN = 0.001;
+
+DEADZONE_MARGIN = 0.75;
+DEADZONE_REACTION_WHEEL_VELOCITY = DEADZONE_MARGIN * REACTION_WHEEL_VELOCITY_SATURATION;
+% N.A.: DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = 0.087964594300514.
+DEADZONE_REACTION_WHEEL_ANGULAR_MOMENTUM = REACTION_WHEEL_INERTIA * DEADZONE_REACTION_WHEEL_VELOCITY * dcgain(REACTION_WHEEL_ANGULAR_MOMENTUM.TRANSFER_FUNCTION);
+% High values (1) of deadzoneControllerGain create a oscilating regime.
+% Low values (0.01) of deadzoneControllerGain don't reject the Td.
+% Values around 0.1 reject the Td and create a not so bad oscilating
+% regime.
+deadzoneControllerGain = 0.1;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%3 CONTROL LAW VALIDATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  3.1  Simulations
+% For convenience we reset the modal controller gain matrix with the values
+% found earlier in this script (in case the script is partially executed).
+simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
+
+satelliteInertiaSamples = SATELLITE_INERTIA*(1-SATELLITE_INERTIA_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
+flexibleModeDampingRatioSamples = FLEXIBLE_MODE_DAMPING_RATIO*(1-FLEXIBLE_MODE_DAMPING_RATIO_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
+flexibleModeFrequencySamples = FLEXIBLE_MODE_FREQUENCY*(1-FLEXIBLE_MODE_FREQUENCY_UNCERTAINTY*(1-2*rand(1,NUMBER_OF_SAMPLES)));
+
+% Plot of Angle response to the 50 samples.
+% simulationAngleFigure = figure('Name', 'Simulation of angle response for modal control and model for 50 random samples', 'NumberTitle','off');
+% hold on
+% for i = 1:NUMBER_OF_SAMPLES
+%     satelliteInertia = satelliteInertiaSamples(i);
+%     flexibleModeDampingRatio = flexibleModeDampingRatioSamples(i);
+%     flexibleModeFrequency = flexibleModeFrequencySamples(i);
+%         
+%     simulationSimulinkOutput = sim(SIMULATION_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
+%     plot(simulationSimulinkOutput.measuredSatelliteAngle);
+% end
+
+% Plot of the poles of the closed-loop state matrix for the 50 samples.
 % simulationPolesFigure = figure('Name', 'Simulation of poles for modal control angle and model for 50 random samples', 'NumberTitle','off');
 % hold on
 % for i = 1:NUMBER_OF_SAMPLES
@@ -461,37 +467,37 @@ damp(modalControlWithIntegratorOpenLoop.A-modalControlWithIntegratorOpenLoop.B*g
 % end
 % xline(0,'-');
 
-% %%  3.2  μ-analysis
-% % You need to install the SMART library first!
+%%  3.2  μ-analysis
+% You need to install the SMART library first!
+
+% For convenience we reset the modal controller gain matrix with the values
+% found earlier in this script (in case the script is partially executed).
+simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
+simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
+
+satelliteInertiaNominalValue = SATELLITE_INERTIA;
+flexibleModeDampingRatioNominalValue = FLEXIBLE_MODE_DAMPING_RATIO;
+flexibleModeFrequencyNominalValue = FLEXIBLE_MODE_FREQUENCY;
+
+% satelliteInertiaMuAnalysisUncertainty = 0;
+% flexibleModeDampingRatioMuAnalysisUncertainty = 0;
+% flexibleModeFrequencyMuAnalysisUncertainty = 0;
 % 
-% % For convenience we reset the modal controller gain matrix with the values
-% % found earlier in this script (in case the script is partially executed).
-% simulationModalGainMatrixStateFeedback = [0.517368537052283,6.148270360361254];
-% simulationModalFeedForwardGain = simulationModalGainMatrixStateFeedback(1);
-% 
-% satelliteInertiaNominalValue = SATELLITE_INERTIA;
-% flexibleModeDampingRatioNominalValue = FLEXIBLE_MODE_DAMPING_RATIO;
-% flexibleModeFrequencyNominalValue = FLEXIBLE_MODE_FREQUENCY;
-% 
-% % satelliteInertiaMuAnalysisUncertainty = 0;
-% % flexibleModeDampingRatioMuAnalysisUncertainty = 0;
-% % flexibleModeFrequencyMuAnalysisUncertainty = 0;
-% % 
-% % satelliteInertiaRobustnessMargin = 0;
-% % flexibleModeDampingRatioRobustnessMargin = 0;
-% % flexibleModeFrequencyRobustnessMargin = 0;
-% 
-% muAnalysisModelStateSpace = generateStateSpaceFromSimulink(MU_ANALYSIS_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
-% muAnalysisModelSimplifiedStateSpaceSystem=simplify(muAnalysisModelStateSpace.system,'full');
-% blk=[-1 0; -1 0; -2 0];
-% opt.lmi = 1;
-% opt.tol = 0;   % increase  opt.tol in case of  convergence  problems
-% 
-% upperBound = muub(muAnalysisModelSimplifiedStateSpaceSystem ,blk ,opt);
-% [lowerBound ,wc ,pert]=mulb(muAnalysisModelSimplifiedStateSpaceSystem ,blk);
-% disp('Upper and Lower bounds:');
-% disp(1/upperBound);
-% disp(1/lowerBound);
+% satelliteInertiaRobustnessMargin = 0;
+% flexibleModeDampingRatioRobustnessMargin = 0;
+% flexibleModeFrequencyRobustnessMargin = 0;
+
+muAnalysisModelStateSpace = generateStateSpaceFromSimulink(MU_ANALYSIS_VALIDATION_MODEL_WITH_MODAL_CONTROLLER_SIMULINK_FN);
+muAnalysisModelSimplifiedStateSpaceSystem=simplify(muAnalysisModelStateSpace.system,'full');
+blk=[-1 0; -1 0; -2 0];
+opt.lmi = 1;
+opt.tol = 0;   % increase  opt.tol in case of  convergence  problems
+
+upperBound = muub(muAnalysisModelSimplifiedStateSpaceSystem ,blk ,opt);
+[lowerBound ,wc ,pert]=mulb(muAnalysisModelSimplifiedStateSpaceSystem ,blk);
+disp('Upper and Lower bounds:');
+disp(1/upperBound);
+disp(1/lowerBound);
 
 %% Function definitions
 
