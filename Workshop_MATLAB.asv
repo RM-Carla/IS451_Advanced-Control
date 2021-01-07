@@ -191,13 +191,22 @@ feedForwardGain = gainMatrixStateFeedback(1);
 maximumTolerableReferenceAngle = CUSTOM_POINTING_ERROR;   % As read on the scope from the closed loop simulink simulation
 
 modalControlWithIntegratorOpenLoop = generateStateSpaceFromSimulink(MODAL_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN);
-integratorPole =  -0.103;
+integratorPole =  0.0362;
 gainMatrixStateFeedBackWithIntegrator = generateModalWithIntegratorControlGainMatrix(modalControlWithIntegratorOpenLoop, targetDampingCoefficient, targetNaturalFrequency, integratorPole);
 
-% For some reason we find -1*K and this is weird but it works...
-gainMatrixStateFeedBackWithIntegrator = -gainMatrixStateFeedBackWithIntegrator;
+sys_open_loop = linmod('MODAL_CTRL_WITH_INTEGRATOR_OPEN_LOOP_SIMULINK_FN');
+n = size(sys_open_loop.A,1);
+delta = 0.7;
+omega = 0.2;
+lambda = [integratorPole; roots([1 2*delta*omega omega^2])];
+VW1 = null([sys_open_loop.A-lambda(1)*eye(n) sys_open_loop.B]);
+VW2 = null([sys_open_loop.A-lambda(2)*eye(n) sys_open_loop.B]);
+VW3 = null([sys_open_loop.A-lambda(3)*eye(n) sys_open_loop.B]);
+k = -real([
 
-% We didn't manage to find where the mistake was
+
+
+% We didn't find the correct simulink representation to compute the gain,
 % so here you go with the answer [0.0223 -0.55 -5.7].
 % gainMatrixStateFeedBackWithIntegrator = [0.0223 -0.55 -5.7];
 
